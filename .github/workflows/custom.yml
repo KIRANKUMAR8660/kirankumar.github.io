@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Prompt This Into Existence — Orientation Utility</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#111936; --muted:#94a3b8; --text:#e2e8f0; --brand:#60a5fa; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --ring:#3b82f6;
+    }
+    html,body{height:100%; background:radial-gradient(1200px 600px at 50% -20%, #0b1228 0%, #070a16 60%, #05070f 100%); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";}
+    .container{max-width:680px; margin:0 auto; padding:18px;}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border:1px solid rgba(148,163,184,.18); border-radius:20px; box-shadow:0 10px 40px rgba(0,0,0,.35); padding:18px; backdrop-filter: blur(6px);}
+    .grid{display:grid; gap:12px;}
+    .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .title{font-size:22px; font-weight:700; letter-spacing:.2px}
+    .subtitle{font-size:13px; color:var(--muted)}
+    .chip{font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(148,163,184,.25); color:#cbd5e1}
+    .muted{color:var(--muted)}
+    .btn{appearance:none; border:none; border-radius:14px; padding:10px 14px; font-weight:600; background:#111936; color:#dbeafe; border:1px solid rgba(99,102,241,.25); cursor:pointer; transition:.2s transform,.2s background,.2s box-shadow}
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
+    .btn.primary{background:linear-gradient(135deg,#1e40af,#2563eb); border-color:transparent}
+    .btn.warn{background:linear-gradient(135deg,#a16207,#eab308)}
+    .btn.danger{background:linear-gradient(135deg,#b91c1c,#ef4444)}
+    .btn.ghost{background:transparent; border:1px dashed rgba(148,163,184,.35)}
+    input, select{background:#0f172a; color:var(--text); border:1px solid rgba(148,163,184,.25); padding:10px 12px; border-radius:12px; outline:none}
+    input:focus, select:focus{border-color:var(--ring); box-shadow:0 0 0 4px rgba(59,130,246,.15)}
+    .feature{display:none}
+    .feature.active{display:block; animation:fade .25s ease}
+    @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+    .clock{font-size:40px; font-weight:700; letter-spacing:1px}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    footer{opacity:.7; font-size:12px; text-align:center; margin-top:16px}
+    .mode-indicator{display:flex; align-items:center; gap:10px}
+    .dot{width:10px; height:10px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 6px rgba(96,165,250,.15)}
+    .hero{display:flex; justify-content:space-between; align-items:center; gap:12px}
+    .hero .title{font-size:20px}
+    .tips{font-size:12px; color:#9aa4b2}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="grid">
+      <div class="card hero">
+        <div>
+          <div class="title">Orientation Utility ✨</div>
+          <div class="subtitle">Rotate your phone to switch features automatically.</div>
+        </div>
+        <div class="mode-indicator"><span class="dot" aria-hidden="true"></span><span id="modeLabel" class="chip">Detecting…</span></div>
+      </div>
+
+      <div class="card feature" id="feature-alarm">
+        <div class="row" style="justify-content:space-between">
+          <div class="title">⏰ Alarm Clock</div>
+          <div class="subtitle">Portrait (upright)</div>
+        </div>
+        <div class="grid">
+          <div class="row">
+            <label class="subtitle" for="alarm-time">Alarm time</label>
+            <input id="alarm-time" type="time" />
+            <select id="alarm-sound">
+              <option value="beep">Beep</option>
+              <option value="chime">Chime</option>
+            </select>
+            <button class="btn primary" id="set-alarm">Set Alarm</button>
+            <button class="btn ghost" id="clear-alarm">Clear</button>
+          </div>
+          <div class="clock mono" id="now">--:--:--</div>
+          <div class="tips">Allow sound: ensure your device is not in silent mode.</div>
+        </div>
+      </div>
+
+      <div class="card feature" id="feature-stopwatch">
+        <div class="row" style="justify-content:space-between">
+          <div class="title">⏱️ Stopwatch</div>
+          <div class="subtitle">Landscape (primary)</div>
+        </div>
+        <div class="grid">
+          <div class="clock mono" id="sw-display">00:00.00</div>
+          <div class="row">
+            <button class="btn primary" id="sw-start">Start</button>
+            <button class="btn" id="sw-lap">Lap</button>
+            <button class="btn warn" id="sw-stop">Stop</button>
+            <button class="btn ghost" id="sw-reset">Reset</button>
+          </div>
+          <div id="sw-laps" class="subtitle"></div>
+        </div>
+      </div>
+
+      <div class="card feature" id="feature-timer">
+        <div class="row" style="justify-content:space-between">
+          <div class="title">⏳ Timer</div>
+          <div class="subtitle">Portrait (upside down)</div>
+        </div>
+        <div class="grid">
+          <div class="row">
+            <input id="tm-min" type="number" min="0" placeholder="Min" style="width:90px" />
+            <input id="tm-sec" type="number" min="0" max="59" placeholder="Sec" style="width:90px" />
+            <button class="btn primary" id="tm-start">Start</button>
+            <button class="btn warn" id="tm-pause">Pause</button>
+            <button class="btn ghost" id="tm-reset">Reset</button>
+          </div>
+          <div class="clock mono" id="tm-display">00:00</div>
+        </div>
+      </div>
+
+      <div class="card feature" id="feature-weather">
+        <div class="row" style="justify-content:space-between">
+          <div class="title">🌤️ Weather of the Day</div>
+          <div class="subtitle">Landscape (secondary)</div>
+        </div>
+        <div id="wx" class="grid">
+          <div class="subtitle">Fetching your location…</div>
+        </div>
+      </div>
+
+      <footer>
+        Map: portrait-primary → Alarm · landscape-primary → Stopwatch · portrait-secondary → Timer · landscape-secondary → Weather. <br/>
+        Uses free <span class="mono">open-meteo.com</span> API for weather (no key required).
+      </footer>
+    </div>
+  </div>
+
+  <audio id="alarm-audio" preload="auto"></audio>
+  <audio id="beep" preload="auto"></audio>
+  <audio id="chime" preload="auto"></audio>
+
+  <script>
+  // ---------- Orientation Detection ----------
+  const modeLabel = document.getElementById('modeLabel');
+  const features = {
+    'portrait-primary': document.getElementById('feature-alarm'),
+    'landscape-primary': document.getElementById('feature-stopwatch'),
+    'portrait-secondary': document.getElementById('feature-timer'),
+    'landscape-secondary': document.getElementById('feature-weather'),
+  };
+
+  function getOrientationState(){
+    const mmPortrait = window.matchMedia('(orientation: portrait)');
+    const isPortrait = mmPortrait.matches;
+
+    // Primary/secondary detection
+    let angle = (screen.orientation && Number.isFinite(screen.orientation.angle)) ? screen.orientation.angle : (typeof window.orientation === 'number' ? (window.orientation % 360 + 360) % 360 : 0);
+
+    // Normalize primary vs secondary by angle
+    // 0/90 => primary ; 180/270 => secondary (heuristic; may vary per platform)
+    const primary = (angle === 0 || angle === 90);
+
+    if(isPortrait){
+      return primary ? 'portrait-primary' : 'portrait-secondary';
+    } else {
+      return primary ? 'landscape-primary' : 'landscape-secondary';
+    }
+  }
+
+  function setMode(mode){
+    for(const k in features){
+      features[k].classList.toggle('active', k===mode);
+    }
+    modeLabel.textContent = mode.replace('-', ' ');
+  }
+
+  function handleOrientationChange(){
+    setMode(getOrientationState());
+  }
+
+  // Init
+  setMode(getOrientationState());
+  if('onchange' in screen.orientation){
+    screen.orientation.addEventListener('change', handleOrientationChange);
+  }
+  window.matchMedia('(orientation: portrait)').addEventListener('change', handleOrientationChange);
+  window.addEventListener('orientationchange', handleOrientationChange); // iOS legacy
+
+  // ---------- Alarm Clock ----------
+  const alarmTimeInput = document.getElementById('alarm-time');
+  const setAlarmBtn = document.getElementById('set-alarm');
+  const clearAlarmBtn = document.getElementById('clear-alarm');
+  const nowEl = document.getElementById('now');
+  const alarmAudio = document.getElementById('alarm-audio');
+  const beepEl = document.getElementById('beep');
+  const chimeEl = document.getElementById('chime');
+  const alarmSoundSel = document.getElementById('alarm-sound');
+
+  // Small data-URIs for quick demo sounds
+  beepEl.src = 'data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAA...'; // very short trimmed placeholder; replaced at runtime below
+  chimeEl.src = 'data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAA...';
+
+  // Generate simple tones via WebAudio as fallback
+  function playToneSequence(){
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let t = ctx.currentTime;
+    [880, 660, 880, 660, 440, 660, 440].forEach((freq, i)=>{
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(0.2, t+0.02);
+      o.start(t); o.stop(t+0.18); g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+      t += 0.2;
+    });
+  }
+
+  let alarmAt = null; let alarmTick = null; let alarmRinging = false; let stopRinger = null;
+
+  function updateClock(){
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    nowEl.textContent = `${hh}:${mm}:${ss}`;
+
+    if(alarmAt && now >= alarmAt && !alarmRinging){
+      alarmRinging = true;
+      ringAlarm();
+    }
+  }
+  setInterval(updateClock, 250);
+  updateClock();
+
+  function ringAlarm(){
+    // Try to play selected audio; if blocked, use WebAudio tones.
+    const choice = alarmSoundSel.value;
+    const el = (choice==='chime') ? chimeEl : beepEl;
+    el.loop = true;
+    el.play().catch(()=>{ playToneSequence(); });
+    stopRinger = ()=>{ el.pause(); el.currentTime=0; };
+    alert('⏰ Alarm! Tap OK to stop.');
+    stopRinger(); alarmRinging=false; alarmAt=null;
+  }
+
+  setAlarmBtn.addEventListener('click', ()=>{
+    const val = alarmTimeInput.value;
+    if(!val){ alert('Pick a time first'); return; }
+    const [h,m] = val.split(':').map(Number);
+    const now = new Date();
+    const target = new Date(); target.setHours(h,m,0,0);
+    if(target <= now){ target.setDate(target.getDate()+1); } // next day
+    alarmAt = target;
+    const mins = Math.round((alarmAt - now)/60000);
+    alert(`Alarm set for ${val} (in ~${mins} min). Keep this tab open and volume on!`);
+  });
+  clearAlarmBtn.addEventListener('click', ()=>{ alarmAt=null; alarmRinging=false; if(stopRinger) stopRinger(); });
+
+  // ---------- Stopwatch ----------
+  const swDisplay = document.getElementById('sw-display');
+  const swStart = document.getElementById('sw-start');
+  const swStop = document.getElementById('sw-stop');
+  const swReset = document.getElementById('sw-reset');
+  const swLap = document.getElementById('sw-lap');
+  const swLaps = document.getElementById('sw-laps');
+
+  let swRunning=false, swStartTime=0, swAccum=0, swTimer=null, lapIdx=1;
+
+  function fmtMs(ms){
+    const m = Math.floor(ms/60000);
+    const s = Math.floor((ms%60000)/1000);
+    const cs = Math.floor((ms%1000)/10);
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+  }
+  function swTick(){
+    const elapsed = swAccum + (swRunning ? (performance.now()-swStartTime) : 0);
+    swDisplay.textContent = fmtMs(elapsed);
+  }
+  swStart.addEventListener('click', ()=>{
+    if(!swRunning){ swRunning=true; swStartTime=performance.now(); swTimer=setInterval(swTick, 33); }
+  });
+  swStop.addEventListener('click', ()=>{ if(swRunning){ swAccum += performance.now()-swStartTime; swRunning=false; clearInterval(swTimer); swTick(); } });
+  swReset.addEventListener('click', ()=>{ swRunning=false; swAccum=0; clearInterval(swTimer); swTick(); lapIdx=1; swLaps.innerHTML=''; });
+  swLap.addEventListener('click', ()=>{
+    const elapsed = swAccum + (swRunning ? (performance.now()-swStartTime) : 0);
+    const div = document.createElement('div');
+    div.textContent = `Lap ${lapIdx++}: ${fmtMs(elapsed)}`; div.className='chip';
+    swLaps.prepend(div);
+  });
+  swTick();
+
+  // ---------- Timer ----------
+  const tmMin = document.getElementById('tm-min');
+  const tmSec = document.getElementById('tm-sec');
+  const tmStart = document.getElementById('tm-start');
+  const tmPause = document.getElementById('tm-pause');
+  const tmReset = document.getElementById('tm-reset');
+  const tmDisplay = document.getElementById('tm-display');
+
+  let tmRemain=0, tmInt=null, tmActive=false;
+  function tmFmt(ms){
+    const s = Math.max(0, Math.ceil(ms/1000));
+    const m = Math.floor(s/60); const r = s%60;
+    return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+  }
+  function tmTick(){
+    tmRemain -= 250;
+    if(tmRemain <= 0){ tmDisplay.textContent = '00:00'; clearInterval(tmInt); tmActive=false; playToneSequence(); alert('⏳ Time\'s up!'); return; }
+    tmDisplay.textContent = tmFmt(tmRemain);
+  }
+  tmStart.addEventListener('click', ()=>{
+    if(!tmActive){
+      const mins = parseInt(tmMin.value||'0',10);
+      const secs = parseInt(tmSec.value||'0',10);
+      if(tmRemain<=0){ tmRemain = (mins*60 + secs) * 1000; }
+      if(tmRemain<=0){ alert('Enter a positive duration'); return; }
+      tmActive=true; tmInt=setInterval(tmTick, 250);
+    }
+  });
+  tmPause.addEventListener('click', ()=>{ if(tmActive){ clearInterval(tmInt); tmActive=false; } });
+  tmReset.addEventListener('click', ()=>{ clearInterval(tmInt); tmActive=false; tmRemain=0; tmDisplay.textContent='00:00'; });
+
+  // ---------- Weather (Open-Meteo) ----------
+  const wxEl = document.getElementById('wx');
+  const WMO = {
+    0: 'Clear sky', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast',
+    45:'Fog', 48:'Depositing rime fog', 51:'Light drizzle', 53:'Moderate drizzle', 55:'Dense drizzle',
+    56:'Freezing drizzle', 57:'Freezing drizzle', 61:'Slight rain', 63:'Moderate rain', 65:'Heavy rain',
+    66:'Freezing rain', 67:'Freezing rain', 71:'Slight snow', 73:'Moderate snow', 75:'Heavy snow',
+    77:'Snow grains', 80:'Rain showers', 81:'Rain showers', 82:'Violent rain showers', 85:'Snow showers', 86:'Snow showers',
+    95:'Thunderstorm', 96:'Thunderstorm w/ hail', 99:'Thunderstorm w/ hail'
+  };
+  function iconFor(code){
+    if([0].includes(code)) return '☀️';
+    if([1,2].includes(code)) return '🌤️';
+    if([3].includes(code)) return '☁️';
+    if([61,63,65,80,81,82].includes(code)) return '🌧️';
+    if([71,73,75,85,86,77].includes(code)) return '🌨️';
+    if([45,48].includes(code)) return '🌫️';
+    if([95,96,99].includes(code)) return '⛈️';
+    return '🌡️';
+  }
+  async function getWeather(){
+    try{
+      const pos = await new Promise((res, rej)=>{
+        if(!navigator.geolocation) return rej(new Error('Geolocation not supported'));
+        navigator.geolocation.getCurrentPosition(p=>res(p), e=>rej(e), {enableHighAccuracy:true, timeout:8000});
+      });
+      const {latitude, longitude} = pos.coords;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto`;
+      const r = await fetch(url);
+      const j = await r.json();
+      const c = j.current;
+      const d = j.daily;
+      const code = c.weather_code;
+      const now = `${Math.round(c.temperature_2m)}°`;
+      const hi = Math.round(d.temperature_2m_max[0]);
+      const lo = Math.round(d.temperature_2m_min[0]);
+      const desc = WMO[code] || '—';
+      wxEl.innerHTML = `
+        <div class="row">
+          <div style="font-size:44px">${iconFor(code)}</div>
+          <div>
+            <div class="title">${now}</div>
+            <div class="subtitle">${desc}</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="chip">High ${hi}°</div>
+          <div class="chip">Low ${lo}°</div>
+          <div class="chip">Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}</div>
+        </div>`;
+    }catch(e){
+      wxEl.innerHTML = `<div class="subtitle">${e.message}. Using fallback for Delhi, IN.</div>`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=28.61&longitude=77.21&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto`;
+      const r = await fetch(url); const j = await r.json();
+      const code = j.current.weather_code;
+      const now = `${Math.round(j.current.temperature_2m)}°`;
+      const hi = Math.round(j.daily.temperature_2m_max[0]);
+      const lo = Math.round(j.daily.temperature_2m_min[0]);
+      wxEl.insertAdjacentHTML('beforeend', `
+        <div class="row" style="margin-top:6px">
+          <div style="font-size:44px">${iconFor(code)}</div>
+          <div>
+            <div class="title">${now}</div>
+            <div class="subtitle">${WMO[code]||'—'}</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="chip">High ${hi}°</div>
+          <div class="chip">Low ${lo}°</div>
+        </div>`);
+    }
+  }
+  getWeather();
+
+  // Refresh weather when entering its mode (saves battery by not polling)
+  const observer = new MutationObserver(()=>{
+    const isActive = document.getElementById('feature-weather').classList.contains('active');
+    if(isActive){ getWeather(); }
+  });
+  observer.observe(document.getElementById('feature-weather'), {attributes:true});
+
+  // Respect user reduced motion
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.querySelectorAll('*').forEach(el=>{ el.style.scrollBehavior='auto'; });
+  }
+  </script>
+</body>
+</html>
